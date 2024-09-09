@@ -1,14 +1,11 @@
 import streamlit as st
 import pandas as pd
 from collections import defaultdict
-import os
+import plotly.express as px
 
 def carregar_dados(arquivo):
-    if not os.path.exists(arquivo):
-        st.error(f"O arquivo '{arquivo}' não foi encontrado no diretório do script.")
-        return None
     try:
-        return pd.read_csv(arquivo, delimiter=',')
+        return pd.read_csv(arquivo)
     except Exception as e:
         st.error(f"Erro ao ler o arquivo: {str(e)}")
         return None
@@ -61,28 +58,49 @@ if df is not None:
         col2.metric("Vitórias", stats['vitorias'])
         col3.metric("Empates", stats['empates'])
         col4.metric("Derrotas", stats['derrotas'])
-
         aproveitamento = (stats['vitorias'] * 3 + stats['empates']) / (stats['jogos'] * 3) * 100
         st.metric("Aproveitamento", f"{aproveitamento:.2f}%")
 
+        fig = px.pie(
+            values=[stats['vitorias'], stats['empates'], stats['derrotas']],
+            names=['Vitórias', 'Empates', 'Derrotas'],
+            title=f"Desempenho de {treinador_selecionado}"
+        )
+        st.plotly_chart(fig)
+
     st.header("Análise de Formações")
     col1, col2 = st.columns(2)
-
     with col1:
         st.subheader("Top 5 Formações Mandante")
-        st.bar_chart(formacoes_mandante.head(5))
+        fig_mandante = px.bar(
+            x=formacoes_mandante.head(5).index,
+            y=formacoes_mandante.head(5).values,
+            labels={'x': 'Formação', 'y': 'Frequência'},
+            title="Top 5 Formações Mandante"
+        )
+        st.plotly_chart(fig_mandante)
 
     with col2:
         st.subheader("Top 5 Formações Visitante")
-        st.bar_chart(formacoes_visitante.head(5))
+        fig_visitante = px.bar(
+            x=formacoes_visitante.head(5).index,
+            y=formacoes_visitante.head(5).values,
+            labels={'x': 'Formação', 'y': 'Frequência'},
+            title="Top 5 Formações Visitante"
+        )
+        st.plotly_chart(fig_visitante)
 
     st.header("Comparação de Formações")
     formacoes_df = pd.DataFrame({
         'Mandante': formacoes_mandante,
         'Visitante': formacoes_visitante
     }).fillna(0)
-
-    st.bar_chart(formacoes_df)
+    fig_comparacao = px.bar(
+        formacoes_df,
+        labels={'value': 'Frequência', 'variable': 'Tipo'},
+        title="Comparação de Formações Mandante vs Visitante"
+    )
+    st.plotly_chart(fig_comparacao)
 
 else:
     st.error("Não foi possível carregar os dados. Por favor, verifique o arquivo CSV.")
